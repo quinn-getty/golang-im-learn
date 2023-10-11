@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 )
@@ -45,6 +46,11 @@ func (this *User) OnLine() {
 	this.server.BroadCast(this, "已上线！")
 }
 
+// 发送消息
+func (this *User) SendMsg(msg string) {
+	this.conn.Write([]byte(msg))
+}
+
 // 用户下线
 func (this *User) OffLine() {
 	this.server.mapLock.Lock()
@@ -56,5 +62,16 @@ func (this *User) OffLine() {
 
 // 用户处理消息
 func (this *User) DoMessage(msg string) {
-	this.server.BroadCast(this, msg)
+	log.Println(msg, msg == "who")
+	if msg == "who" {
+		this.server.mapLock.Lock()
+		for _, user := range this.server.OnlineMap {
+			onlineMsg := fmt.Sprintf("[ %s ] %s : 在线\n", user.Name, user.Name)
+			this.SendMsg(onlineMsg)
+		}
+		this.server.mapLock.Unlock()
+	} else {
+		this.server.BroadCast(this, msg)
+	}
+
 }
