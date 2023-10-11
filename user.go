@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -66,10 +67,26 @@ func (this *User) DoMessage(msg string) {
 	if msg == "who" {
 		this.server.mapLock.Lock()
 		for _, user := range this.server.OnlineMap {
-			onlineMsg := fmt.Sprintf("[ %s ] %s : 在线\n", user.Name, user.Name)
+			onlineMsg := fmt.Sprintf("[ %s ] %s : 在线\n", user.Addr, user.Name)
 			this.SendMsg(onlineMsg)
 		}
 		this.server.mapLock.Unlock()
+	} else if len(msg) > 7 && msg[:7] == "rename:" {
+		name := strings.Split(msg, ":")[1]
+
+		_, ok := this.server.OnlineMap[name]
+
+		if ok {
+			this.SendMsg("名字[ " + name + "] 已存在！\n")
+		} else {
+			this.server.mapLock.Lock()
+			delete(this.server.OnlineMap, this.Name)
+			this.Name = name
+			this.server.OnlineMap[name] = this
+			this.server.mapLock.Unlock()
+			this.SendMsg("名字已经修改为: " + name + "\n")
+		}
+
 	} else {
 		this.server.BroadCast(this, msg)
 	}
