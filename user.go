@@ -33,7 +33,7 @@ func NewUser(conn net.Conn, server *Server) *User {
 func (this *User) ListenMessage() {
 	for {
 		msg := <-this.C
-		log.Print("用户", this.Name, "准备发送消息", msg)
+		log.Print("用户", this.Name, "准备发送消息", msg, len(msg), "\n", this.conn, "\n")
 		this.conn.Write([]byte(msg + "\n"))
 	}
 }

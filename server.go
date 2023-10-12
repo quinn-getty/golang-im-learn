@@ -5,7 +5,9 @@ import (
 	"io"
 	"log"
 	"net"
+	"runtime"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -22,8 +24,8 @@ func (this *Server) ListenMessager() {
 		msg := <-this.Message
 		log.Print("server 收到消息 ", msg)
 		this.mapLock.Lock()
-		for _, client := range this.OnlineMap {
-			client.C <- msg
+		for _, user := range this.OnlineMap {
+			user.C <- msg
 		}
 		this.mapLock.Unlock()
 	}
@@ -40,6 +42,8 @@ func (this *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, this)
 
 	user.OnLine()
+
+	isLive := make(chan bool)
 
 	// 处理用户发送的数据
 	go func() {
@@ -59,8 +63,32 @@ func (this *Server) Handler(conn net.Conn) {
 			// 提取用户消息 去除"\n"
 			msg := string(buf[:n-1])
 			user.DoMessage(msg)
+
+			isLive <- true
 		}
 	}()
+
+	for {
+		select {
+		case <-isLive:
+			// 重置时间
+		case <-time.After(time.Second * 10):
+
+			this.mapLock.Lock()
+			delete(this.OnlineMap, user.Name)
+			this.mapLock.Unlock()
+
+			user.SendMsg("连接超时，您已经被踢下线！")
+			conn.Close()
+			user.conn.Close()
+
+			close(user.C) // 存在bug ListenMessage会一直执行
+			// 退出
+			runtime.Goexit()
+			// return
+		}
+
+	}
 }
 
 func (this *Server) Start() {
