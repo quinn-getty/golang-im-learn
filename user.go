@@ -31,11 +31,12 @@ func NewUser(conn net.Conn, server *Server) *User {
 
 // 监听当前用户的channel的方法
 func (this *User) ListenMessage() {
-	for {
-		msg := <-this.C
+	// for range 会识别是否关闭
+	for msg := range this.C {
 		log.Print("用户", this.Name, "准备发送消息", msg, len(msg), "\n", this.conn, "\n")
 		this.conn.Write([]byte(msg + "\n"))
 	}
+	log.Println("----")
 }
 
 // 用户上线
