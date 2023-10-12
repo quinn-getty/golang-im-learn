@@ -72,7 +72,7 @@ func (this *Server) Handler(conn net.Conn) {
 		select {
 		case <-isLive:
 			// 重置时间
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 60 * 5):
 
 			this.mapLock.Lock()
 			delete(this.OnlineMap, user.Name)

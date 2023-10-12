@@ -64,7 +64,7 @@ func (this *User) OffLine() {
 
 // 用户处理消息
 func (this *User) DoMessage(msg string) {
-	log.Println(msg, msg == "who")
+	//  查询在线
 	if msg == "who" {
 		this.server.mapLock.Lock()
 		for _, user := range this.server.OnlineMap {
@@ -72,7 +72,11 @@ func (this *User) DoMessage(msg string) {
 			this.SendMsg(onlineMsg)
 		}
 		this.server.mapLock.Unlock()
-	} else if len(msg) > 7 && msg[:7] == "rename:" {
+		return
+	}
+
+	// 修改名字
+	if len(msg) > 7 && msg[:7] == "rename:" {
 		name := strings.Split(msg, ":")[1]
 
 		_, ok := this.server.OnlineMap[name]
@@ -88,8 +92,30 @@ func (this *User) DoMessage(msg string) {
 			this.SendMsg("名字已经修改为: " + name + "\n")
 		}
 
-	} else {
-		this.server.BroadCast(this, msg)
+		return
 	}
+
+	if len(msg) > 3 && msg[:2] == "@:" {
+		name := strings.Split(msg, ":")[1]
+
+		remoteUser, ok := this.server.OnlineMap[name]
+		if !ok {
+			this.SendMsg("用户[" + name + "]不存在\n")
+			return
+		}
+
+		msg := strings.Split(msg, ":")[2]
+		if msg == "" {
+			this.SendMsg("私聊消息为空\n")
+			return
+		}
+
+		remoteUser.SendMsg(fmt.Sprintf("【%s】对你说：%s", this.Name, msg))
+		return
+	}
+
+	// 私聊 @name:message
+
+	this.server.BroadCast(this, msg)
 
 }
